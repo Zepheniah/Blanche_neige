@@ -25,28 +25,25 @@ public class SeptNains {
         final Nain nain [] = new Nain [nbNains];
         for(int i = 0; i < nbNains; i++) nain[i] = new Nain(noms[i],bn);
         for (int i = 0; i < nbNains; i++) nain[i].start();
-
-
         while (System.currentTimeMillis()<fin);
         System.out.println("Interruption des 7 nains.");
         for (int i = 0; i < nbNains; i++){
             nain[i].interrupt();
-            System.out.println(new Date(System.currentTimeMillis())+" "+nain[i].getName() + " a terminé!");
         }
 
-
-        Boolean interomp = true;
-        while(interomp){
-            for(int i = 0;i<nbNains;i++){
-                if(!nain[i].isAlive())interomp = true;
-                else interomp = false;
+        boolean terminated = true;
+        while (terminated){
+            for (int i = 0; i < nbNains; i++){
+                if(!nain[i].isInterrupted()) terminated = true;
+                else terminated = false;
             }
         }
-        if(!interomp) System.out.println("Tous les nains ont terminé.");
+        Thread.yield();
+        if (!terminated)System.out.println(new Date(System.currentTimeMillis())+" "+"Tous les nains ont terminé.");
     }
 
 
-}
+    }
 
 
 class BlancheNeige {
@@ -68,10 +65,7 @@ class BlancheNeige {
         System.out.println("\t" + Thread.currentThread().getName()
                 + " veut la ressource.");
         while (Thread.currentThread().getName() != FIFO.peekFirst()){
-
                 wait();
-
-
         }
 
     }
@@ -85,7 +79,7 @@ class BlancheNeige {
                 + " accède à la ressource.");
     }
 
-    public synchronized void relâcher () {
+    public synchronized void relâcher (){
         System.out.println("\t" + Thread.currentThread().getName()
                 + " relâche la ressource.");
         String temp = FIFO.pollFirst();
@@ -103,7 +97,7 @@ class Nain extends Thread {
     }
     public void run() {
 
-        while (!this.isInterrupted()) {
+        while (!isInterrupted()) {
             try {
                 bn.requérir();
             } catch (InterruptedException e) {
@@ -116,17 +110,24 @@ class Nain extends Thread {
                 fin_thread();
                 break;
             }
-                System.out.println(new Date(System.currentTimeMillis())+" "+getName() + " a un accès (exclusif) à Blanche-Neige.");
-                try {
-                    sleep(2000);
-                } catch (InterruptedException e) {
-                    
-                    fin_thread();
-                    break;
-                }
+            System.out.println(new Date(System.currentTimeMillis())+" "+getName() + " a un accès (exclusif) à Blanche-Neige.");
+            try {
+                sleep(2000);
+            } catch (InterruptedException e) {
                 System.out.println(new Date(System.currentTimeMillis())+" "+getName() + " s'apprête à quitter Blanche-Neige.");
+
                 bn.relâcher();
+                fin_thread();
+                break;
             }
+                System.out.println(new Date(System.currentTimeMillis())+" "+getName() + " s'apprête à quitter Blanche-Neige.");
+
+                bn.relâcher();
+
+        }
+        System.out.println(new Date(System.currentTimeMillis())+" "+getName() + " a terminé!");
+        interrupt();
+
 
     }
 
