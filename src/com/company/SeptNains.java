@@ -15,7 +15,8 @@ public class SeptNains {
     public static void main(String[] args) throws InterruptedException {
         long start = System.currentTimeMillis();
         Date début = new Date(start);
-        long fin = start+5000;
+        long fin = start+5000; // Début de programme + 5 seconde, variable permettant de mettre fin au programme au bout de 5 seconde
+
         System.out.println("[" + sdf.format(début) + "] Début du programme.");
 
         final BlancheNeige bn = new BlancheNeige();
@@ -25,12 +26,23 @@ public class SeptNains {
         final Nain nain [] = new Nain [nbNains];
         for(int i = 0; i < nbNains; i++) nain[i] = new Nain(noms[i],bn);
         for (int i = 0; i < nbNains; i++) nain[i].start();
-        while (System.currentTimeMillis()<fin);
+
+
+        while (System.currentTimeMillis()<fin); // Patiente 5 seconde avant de commencer la fermeture du programme
+
+
         System.out.println("Interruption des 7 nains.");
+        /**
+         * Interrompt chaque thread de nain
+         */
         for (int i = 0; i < nbNains; i++){
             nain[i].interrupt();
         }
 
+        /**
+         * Permet de vérifier que bel et bien tout les threads de nain soit interrompu
+         * NB : Pour une raison que j'ignore parfois aucun thread ne se retrouve interrompu empechant le programme de sortir de la boucle while
+         */
         boolean terminated = true;
         while (terminated){
             for (int i = 0; i < nbNains; i++){
@@ -48,12 +60,14 @@ public class SeptNains {
 
 class BlancheNeige {
     private volatile boolean libre = true;        // Initialement, Blanche-Neige est libre.
-    private volatile LinkedList<String> FIFO = new LinkedList<>();
+    private volatile LinkedList<String> FIFO = new LinkedList<>(); // Liste qui sera utilisé comme file d'attente
 
     public synchronized void requérir () throws InterruptedException {
-        /*
-        if(!FIFO.contains(Thread.currentThread().getName()))FIFO.addFirst(Thread.currentThread().getName());
-        */
+
+        /**
+         * Je crée une liste avec les nains et si un nain est pas en tête de liste
+         * alors il patientera que son tour arrive
+         */
         FIFO.add("Simplet");
         FIFO.add("Dormeur");
         FIFO.add("Atchoum");
@@ -64,7 +78,7 @@ class BlancheNeige {
 
         System.out.println("\t" + Thread.currentThread().getName()
                 + " veut la ressource.");
-        while (Thread.currentThread().getName() != FIFO.peekFirst()){
+        while (Thread.currentThread().getName() != FIFO.peekFirst()){ // Si le thread courant n'est pas premier dans la file alors wait
                 wait();
         }
 
@@ -73,7 +87,6 @@ class BlancheNeige {
     public synchronized void accéder () throws InterruptedException {
 
         while(!libre)wait();                    // Le nain s'endort sur l'objet bn
-
         libre = false;
         System.out.println("\t" + Thread.currentThread().getName()
                 + " accède à la ressource.");
@@ -82,6 +95,10 @@ class BlancheNeige {
     public synchronized void relâcher (){
         System.out.println("\t" + Thread.currentThread().getName()
                 + " relâche la ressource.");
+        /**
+         * Je prends la tete de file qui le nain venant de relacher la ressource et je le met à la fin
+         * laissant sa place au autre nain pour les futures itération
+         */
         String temp = FIFO.pollFirst();
         FIFO.addLast(temp);
         libre = true;
@@ -104,12 +121,14 @@ class Nain extends Thread {
                 fin_thread();
                 break;
             }
+
             try {
                 bn.accéder();
             } catch (InterruptedException e) {
                 fin_thread();
                 break;
             }
+
             System.out.println(new Date(System.currentTimeMillis())+" "+getName() + " a un accès (exclusif) à Blanche-Neige.");
             try {
                 sleep(2000);
@@ -121,9 +140,7 @@ class Nain extends Thread {
                 break;
             }
                 System.out.println(new Date(System.currentTimeMillis())+" "+getName() + " s'apprête à quitter Blanche-Neige.");
-
                 bn.relâcher();
-
         }
         System.out.println(new Date(System.currentTimeMillis())+" "+getName() + " a terminé!");
         interrupt();
@@ -131,9 +148,11 @@ class Nain extends Thread {
 
     }
 
+    /**
+     * Fonction appeller à chaque catch Interrupted execution,dans le cas si on souhaite rajouter d'autre comportement
+     */
     void fin_thread(){
-
-            this.interrupt();
+        this.interrupt();
     }
 
     @Override
